@@ -29,13 +29,23 @@ struct ContentView: View {
             }
             .navigationTitle(rootWord)
             .onSubmit(addNewWord)
+            .onAppear(perform: startGame)
         }
     }
+    
+    // add validation methods here
+    
+    // isOriginal (not yet in the list)
+    // isPossible (letters are in root word)
+    // isRealWord (does exist)
+    // another function for creating error message and title and toggle the alert boolean
+    // lastly add the alert modifier to the view
+    
+    
     
     func addNewWord() -> Void {
         let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         guard answer.count > 0 else { return }
-        
        
         // more validation to come
         withAnimation{
@@ -45,7 +55,16 @@ struct ContentView: View {
     }
     
     func startGame(){
-        
+        if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
+            if let startWords = try? String(contentsOf: startWordsURL) {
+                let allWords = startWords.components(separatedBy: "\n")
+                rootWord = allWords.randomElement() ?? "silkworm"
+                // when we get here, everything worked and we have a 8 letter root word
+                return
+            }
+        }
+        // something went wrong with loading the file
+        fatalError("Could not load start.txt from bundle!")
     }
 }
 
