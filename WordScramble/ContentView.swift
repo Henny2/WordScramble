@@ -11,6 +11,9 @@ struct ContentView: View {
     @State private var usedWords = [String]()
     @State private var rootWord = ""
     @State private var newWord = ""
+    @State private var errorMessage = ""
+    @State private var errorTitle = ""
+    @State private var showAlert = false
     var body: some View {
         NavigationStack{
             Form{
@@ -30,24 +33,65 @@ struct ContentView: View {
             .navigationTitle(rootWord)
             .onSubmit(addNewWord)
             .onAppear(perform: startGame)
+            .alert(errorTitle, isPresented: $showAlert){} message: {
+                Text(errorMessage)
+            }
         }
     }
     
     // add validation methods here
     
-    // isOriginal (not yet in the list)
-    // isPossible (letters are in root word)
-    // isRealWord (does exist)
     // another function for creating error message and title and toggle the alert boolean
     // lastly add the alert modifier to the view
     
+    func createAlert(title: String, message: String) {
+        errorMessage = message
+        errorTitle = title
+        showAlert = true
+    }
+    
+    func isOriginal(word: String) -> Bool {
+        return !usedWords.contains(word)
+    }
+    
+    func isPossible(word: String) -> Bool {
+        var tempWord = rootWord
+        for letter in word {
+            if let pos = tempWord.firstIndex(of: letter){
+                tempWord.remove(at: pos)
+            } else {
+                return false
+            }
+        }
+        return true
+    }
+    
+//    So, our last method will make an instance of UITextChecker, which is responsible for scanning strings for misspelled words. We’ll then create an NSRange to scan the entire length of our string, then call rangeOfMisspelledWord() on our text checker so that it looks for wrong words. When that finishes we’ll get back another NSRange telling us where the misspelled word was found, but if the word was OK the location for that range will be the special value NSNotFound.
+    
+    func isRealWord(word:String) -> Bool {
+        let checker = UITextChecker()
+        let range = NSRange(location: 0, length: word.utf16.count)
+        let misspelledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
+        return misspelledRange.location == NSNotFound
+    }
     
     
     func addNewWord() -> Void {
         let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         guard answer.count > 0 else { return }
        
-        // more validation to come
+        guard isOriginal(word: newWord) else {
+            createAlert(title: "Word already submitted!", message: "Try something else!")
+            return
+        }
+        guard isRealWord(word: newWord) else {
+            createAlert(title: "This is not a real word!", message: "Try something real!")
+            return
+        }
+        guard isPossible(word: newWord) else {
+            createAlert(title: "This word is not possible!", message: "Try a different combination")
+            return
+        }
         withAnimation{
             usedWords.insert(newWord, at: 0)
         }
