@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var errorMessage = ""
     @State private var errorTitle = ""
     @State private var showAlert = false
+    @State private var usersScore = 0
     var body: some View {
         NavigationStack{
             Form{
@@ -27,10 +28,25 @@ struct ContentView: View {
                             Image(systemName: "\(word.count).circle")
                             Text(word)
                         }
+                        // the following would just group the views together
+//                        .accessibilityElement(children: .combine)
+                        // the following will group them and ignore their labels which means we have to add a custom label
+                        .accessibilityElement()
+                        .accessibilityLabel("\(word), \(word.count) letters")
                     }
                 }
             }
             .navigationTitle(rootWord)
+            .toolbar{
+                HStack{
+                    Text("Score: \(usersScore)").font(.headline)
+                    Spacer()
+                    Spacer()
+                    Spacer()
+                    Spacer()
+                    Button("New game", action: startGame)
+                }
+            }
             .onSubmit(addNewWord)
             .onAppear(perform: startGame)
             .alert(errorTitle, isPresented: $showAlert){} message: {
@@ -75,6 +91,18 @@ struct ContentView: View {
         return misspelledRange.location == NSNotFound
     }
     
+    func isLongEnough(word:String) -> Bool {
+        return word.count >= 3
+    }
+    
+    func isNotRootWord(word:String) -> Bool {
+        return word != rootWord
+    }
+    
+    func scoreWord(word:String) -> Int {
+        return word.count
+    }
+    
     
     func addNewWord() -> Void {
         let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -92,9 +120,19 @@ struct ContentView: View {
             createAlert(title: "This word is not possible!", message: "Try a different combination")
             return
         }
+        guard isLongEnough(word: newWord) else {
+            createAlert(title: "Word is not long enough!", message: "Your word has to have at least three characters!")
+            return
+        }
+        guard isNotRootWord(word: newWord) else {
+            createAlert(title: "Submitting the root word does not count!", message: "Be more creative!")
+            return
+        }
+        
         withAnimation{
             usedWords.insert(newWord, at: 0)
         }
+        usersScore += scoreWord(word: newWord)
         newWord = ""
     }
     
